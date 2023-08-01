@@ -27,10 +27,10 @@ class RestaurantSearchPage extends StatelessWidget {
                 margin: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
                   color: Colors.white,
-                  borderRadius: BorderRadius.circular(24),
+                  borderRadius: BorderRadius.circular(10),
                   boxShadow: const [
                     BoxShadow(
-                      color: Colors.grey,
+                      color: Colors.black12,
                       blurRadius: 10,
                       offset: Offset(0, 5),
                     ),
@@ -80,7 +80,7 @@ class RestaurantSearchPage extends StatelessWidget {
                       case ResultState.noData:
                         return const Center(
                           child: Material(
-                            child: Text('Oopss... Pencarian tidak ditemukan'),
+                            child: Text('Kata kunci tidak ditemukan!'),
                           ),
                         );
                       case ResultState.error:
@@ -92,7 +92,7 @@ class RestaurantSearchPage extends StatelessWidget {
                       default:
                         return const Center(
                           child: Material(
-                            child: Text('Silahkan lakukan pencarian...'),
+                            child: Text('Lakukan pencarian...'),
                           ),
                         );
                     }
