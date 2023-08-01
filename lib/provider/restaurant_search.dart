@@ -28,7 +28,7 @@ class RestaurantSearchProvider extends ChangeNotifier {
         _state = ResultState.noData;
         notifyListeners();
 
-        return _message = 'Pencarian Tidak Ditemukan';
+        return _message = 'Kata Kunci tidak ditemukan';
       } else {
         _state = ResultState.hasData;
         notifyListeners();
