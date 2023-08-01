@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../restaurant.dart';
+import 'package:restaurant_app/data/api/api_service.dart';
+import 'package:restaurant_app/data/model/restaurant_list.dart';
+import 'package:restaurant_app/provider/restaurant_detail.dart';
+import 'package:restaurant_app/data/enum/result_state.dart';
+import 'package:restaurant_app/widget/detail_restaurant.dart';
 
 class RestaurantDetailPage extends StatelessWidget {
   static const routeName = '/restaurant_detail';
@@ -11,6 +16,16 @@ class RestaurantDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ChangeNotifierProvider<RestaurantDetailProvider>(
+      create: (_) => RestaurantDetailProvider(
+        apiService: ApiService(),
+        restaurantId: restaurant.id,
+      ),
+      child: _buildContext(context),
+    );
+  }
+
+  Widget _buildContext(BuildContext context) {
     final heightScreen = MediaQuery.of(context).size.height;
     final widthScreen = MediaQuery.of(context).size.width;
 
@@ -27,126 +42,33 @@ class RestaurantDetailPage extends StatelessWidget {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(10),
                   image: DecorationImage(
-                    image: NetworkImage(restaurant.pictureId!),
+                    image: NetworkImage(
+                      'https://restaurant-api.dicoding.dev/images/large/${restaurant.pictureId}',
+                    ),
                     fit: BoxFit.cover,
                   ),
                 ),
               ),
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                restaurant.name!,
-                                style:
-                                    Theme.of(context).textTheme.headlineSmall,
-                              ),
-                              const SizedBox(height: 8),
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.location_pin,
-                                    size: 18,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Text(
-                                    '${restaurant.city}',
-                                    style: Theme.of(context)
-                                        .textTheme
-                                        .bodyMedium
-                                        ?.copyWith(
-                                            color: const Color(0xFF616161)),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
+              Consumer<RestaurantDetailProvider>(
+                builder: (_, provider, __) {
+                  switch (provider.state) {
+                    case ResultState.loading:
+                      return Center(
+                        child: CircularProgressIndicator(
+                          color: Colors.grey[400],
                         ),
-                        const SizedBox(width: 8),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.star,
-                              size: 18,
-                              color: Colors.amber,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              '${restaurant.rating}',
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium!
-                                  .copyWith(color: const Color(0xFF616161)),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Description :',
-                      style: Theme.of(context).textTheme.bodyLarge,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      restaurant.description!,
-                      textAlign: TextAlign.justify,
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Foods :',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        children: restaurant.menus!.foods!.map((food) {
-                          return _itemMenu(
-                            food.name,
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 24),
-                    Text(
-                      'Drinks :',
-                      style: Theme.of(context).textTheme.bodyMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    SizedBox(
-                      height: 100,
-                      child: ListView(
-                        scrollDirection: Axis.horizontal,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 4,
-                          vertical: 4,
-                        ),
-                        children: restaurant.menus!.drinks!.map((drink) {
-                          return _itemMenu(
-                            drink.name,
-                          );
-                        }).toList(),
-                      ),
-                    )
-                  ],
-                ),
+                      );
+                    case ResultState.hasData:
+                      return DetailRestaurant(
+                        provider: provider,
+                        restaurant: provider.result.restaurant,
+                      );
+                    case ResultState.error:
+                      return const Text('Koneksi Terputus');
+                    default:
+                      return const SizedBox();
+                  }
+                },
               )
             ],
           ),
@@ -175,37 +97,4 @@ class RestaurantDetailPage extends StatelessWidget {
       floatingActionButtonLocation: FloatingActionButtonLocation.startTop,
     );
   }
-}
-
-Widget _itemMenu(String? name) {
-  return Container(
-    height: 100,
-    width: 100,
-    margin: const EdgeInsets.only(right: 12),
-    padding: const EdgeInsets.all(8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(10),
-      boxShadow: const [
-        BoxShadow(
-          color: Colors.grey,
-          blurRadius: 5,
-          offset: Offset(1, 2),
-        ),
-      ],
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            '$name',
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            textAlign: TextAlign.start,
-          ),
-        ),
-      ],
-    ),
-  );
 }

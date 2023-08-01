@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 
-import '../restaurant.dart';
-import 'restaurant_detail.dart';
+import 'package:restaurant_app/data/api/api_service.dart';
+import 'package:restaurant_app/provider/restaurant_list.dart';
+import 'package:restaurant_app/data/enum/result_state.dart';
+import 'package:restaurant_app/widget/card_list.dart';
+import 'restaurant_search.dart';
 
 class RestaurantListPage extends StatelessWidget {
   static const routeName = '/restaurant_list';
@@ -10,194 +14,55 @@ class RestaurantListPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Restaurant App'),
-      ),
-      body: FutureBuilder<String>(
-        future: DefaultAssetBundle.of(context)
-            .loadString('assets/local_restaurant.json'),
-        builder: (context, snapshot) {
-          final List<Restaurant> restaurants = parseRestaurants(snapshot.data);
-
-          return ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            itemCount: restaurants.length,
-            itemBuilder: (context, index) {
-              final restaurant = restaurants[index];
-              return _ItemRestauranItem(context, restaurant);
-            },
-          );
-        },
+    return ChangeNotifierProvider<RestaurantListProvider>(
+      create: (_) => RestaurantListProvider(apiService: ApiService()),
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Restaurant App'),
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.search),
+              onPressed: () {
+                Navigator.pushNamed(context, RestaurantSearchPage.routeName);
+              },
+            ),
+          ],
+        ),
+        body: _buildList(),
       ),
     );
   }
-}
 
-Widget _ItemRestauranItem(BuildContext context, Restaurant restaurant) {
-  return Padding(
-    padding: const EdgeInsets.only(bottom: 5, top: 5),
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      shape: RoundedRectangleBorder(
-        side: const BorderSide(width: 1, color: Colors.black12),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      leading: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: Image.network(
-          restaurant.pictureId!,
-          fit: BoxFit.cover,
-          width: 100,
-          errorBuilder: (ctx, error, _) =>
-              const Center(child: Icon(Icons.error)),
-        ),
-      ),
-      title: Text(restaurant.name!),
-      subtitle: Row(
-        children: [
-          Icon(
-            Icons.location_pin,
-            size: 18,
-            color: Colors.grey[400],
-          ),
-          const SizedBox(width: 4),
-          Text(
-            '${restaurant.city}',
-            style: Theme.of(context)
-                .textTheme
-                .bodyMedium!
-                .copyWith(color: const Color(0xFF616161)),
-          ),
-        ],
-      ),
-      trailing: Icon(Icons.arrow_forward),
-      onTap: () {
-        Navigator.pushNamed(context, RestaurantDetailPage.routeName,
-            arguments: restaurant);
+  Widget _buildList() {
+    return Consumer<RestaurantListProvider>(
+      builder: (_, provider, __) {
+        switch (provider.state) {
+          case ResultState.loading:
+            return Center(
+              child: CircularProgressIndicator(
+                color: Colors.grey[400],
+              ),
+            );
+          case ResultState.hasData:
+            return ListView.builder(
+              padding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 8,
+              ),
+              itemCount: provider.result.count,
+              itemBuilder: (_, index) {
+                final restaurant = provider.result.restaurants[index];
+                return CardList(restaurant: restaurant);
+              },
+            );
+          case ResultState.noData:
+            return const Center(child: Text('Data Kosong'));
+          case ResultState.error:
+            return const Center(child: Text('Koneksi Terputus'));
+          default:
+            return const SizedBox();
+        }
       },
-    ),
-  );
-}
-
-Widget _itemList(BuildContext context, Restaurant restaurant) {
-  return GestureDetector(
-    onTap: () {
-      Navigator.pushNamed(
-        context,
-        RestaurantDetailPage.routeName,
-        arguments: restaurant,
-      );
-    },
-    child: Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.symmetric(vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(10),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 10,
-            offset: Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(10),
-            child: SizedBox(
-              height: 100,
-              width: 150,
-              child: restaurant.pictureId == null
-                  ? Icon(
-                      Icons.broken_image,
-                      size: 100,
-                      color: Colors.grey[400],
-                    )
-                  : Image.network(
-                      restaurant.pictureId!,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) {
-                          return child;
-                        } else {
-                          return Center(
-                            child: CircularProgressIndicator(
-                              color: Colors.grey[400],
-                            ),
-                          );
-                        }
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Icon(
-                          Icons.broken_image,
-                          size: 100,
-                          color: Colors.grey[400],
-                        );
-                      },
-                    ),
-            ),
-          ),
-          const SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 8),
-                Text(
-                  '${restaurant.name}',
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium!
-                      .copyWith(fontWeight: FontWeight.w500, fontSize: 18),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.location_pin,
-                      size: 18,
-                      color: Colors.grey[400],
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${restaurant.city}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium!
-                          .copyWith(color: const Color(0xFF616161)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    const Icon(
-                      Icons.star,
-                      size: 18,
-                      color: Colors.amber,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      '${restaurant.rating}',
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium!
-                          .copyWith(color: const Color(0xFF616161)),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
+    );
+  }
 }
